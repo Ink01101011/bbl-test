@@ -1,0 +1,46 @@
+services:
+  # Backend Service (Development)
+  bbl-backend-dev:
+    build:
+      context: ./bbl-backend
+      dockerfile: Dockerfile
+      target: builder
+    container_name: bbl-backend-dev
+    ports:
+      - "8080:8080"
+      - "5005:5005"  # Debug port
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
+    volumes:
+      - ./bbl-backend/src:/app/src
+      - ./bbl-backend/target:/app/target
+    command: ./mvnw spring-boot:run -Dspring-boot.run.jvmArguments="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
+    restart: unless-stopped
+    networks:
+      - bbl-network
+
+  # Frontend Service (Development)
+  bbl-web-app-dev:
+    build:
+      context: ./bbl-web-app
+      dockerfile: Dockerfile
+      target: deps
+    container_name: bbl-web-app-dev
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://localhost:8080
+    volumes:
+      - ./bbl-web-app:/app
+      - /app/node_modules
+      - /app/.next
+    command: npm run dev
+    restart: unless-stopped
+    networks:
+      - bbl-network
+
+networks:
+  bbl-network:
+    driver: bridge
