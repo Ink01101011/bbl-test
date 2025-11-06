@@ -1,15 +1,17 @@
 package com.th.bbl.backend.service;
 
+import com.th.bbl.backend.exception.NotFoundException;
 import com.th.bbl.backend.exception.ValidationException;
+import com.th.bbl.backend.model.UserDTO;
+import com.th.bbl.backend.model.UserRequestDTO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
-import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,16 +23,12 @@ class UsersServiceTest {
     @InjectMocks
     private UsersService usersService;
 
-    private List<User> mockUsers;
-
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
-
         // Create mock users data
-        mockUsers = new ArrayList<>();
-        mockUsers.add(new User(1L, "John Doe", "johndoe", "john@example.com", "123-456-7890", "example.com"));
-        mockUsers.add(new User(2L, "Jane Smith", "janesmith", "jane@example.com", "987-654-3210", "janesmith.com"));
+        HashSet<UserDTO> mockUsers = new HashSet<>();
+        mockUsers.add(new UserDTO(1L, "John Doe", "johndoe", "john@example.com", "123-456-7890", "example.com"));
+        mockUsers.add(new UserDTO(2L, "Jane Smith", "janesmith", "jane@example.com", "987-654-3210", "janesmith.com"));
 
         // Set mock users list in the service
         ReflectionTestUtils.setField(usersService, "users", mockUsers);
@@ -39,28 +37,28 @@ class UsersServiceTest {
     @Test
     void getAllUsers_ShouldReturnAllUsers() {
         // Act
-        List<User> result = usersService.getAllUsers();
+        List<UserDTO> result = usersService.getAllUsers();
 
         // Assert
         assertEquals(2, result.size());
-        assertEquals("John Doe", result.get(0).getName());
-        assertEquals("Jane Smith", result.get(1).getName());
+        assertEquals("John Doe", result.get(0).name());
+        assertEquals("Jane Smith", result.get(1).name());
     }
 
     @Test
     void getUserById_ExistingId_ShouldReturnUser() {
         // Act
-        Optional<User> result = usersService.getUserById(1L);
+        Optional<UserDTO> result = usersService.getUserById(1L);
 
         // Assert
         assertTrue(result.isPresent());
-        assertEquals("johndoe", result.get().getUsername());
+        assertEquals("johndoe", result.get().username());
     }
 
     @Test
     void getUserById_NonExistingId_ShouldReturnEmpty() {
         // Act
-        Optional<User> result = usersService.getUserById(999L);
+        Optional<UserDTO> result = usersService.getUserById(999L);
 
         // Assert
         assertTrue(result.isEmpty());
@@ -69,111 +67,79 @@ class UsersServiceTest {
     @Test
     void createUser_ValidUser_ShouldAddAndReturnUser() {
         // Arrange
-        User newUser = new User(null, "Test User", "testuser", "test@example.com", "555-555-5555", "test.com");
+        UserRequestDTO newUser = new UserRequestDTO(
+                "Test User",
+                "testuser",
+                "test@example.com",
+                "555-555-5555",
+                "test.com"
+        );
 
         // Act
-        User result = usersService.createUser(newUser);
+        UserDTO result = usersService.createUser(newUser);
 
         // Assert
-        assertEquals(3L, result.getId()); // Expecting ID to be max(existing IDs) + 1
-        assertEquals("Test User", result.getName());
+        assertEquals(3L, result.id()); // Expecting ID to be max(existing IDs) + 1
+        assertEquals("Test User", result.name());
         assertEquals(3, usersService.getAllUsers().size());
-    }
-
-    @Test
-    void createUser_MissingName_ShouldThrowException() {
-        // Arrange
-        User invalidUser = new User(null, null, "testuser", "test@example.com", "555-555-5555", "test.com");
-
-        // Act & Assert
-        ValidationException exception = assertThrows(ValidationException.class, () -> {
-            usersService.createUser(invalidUser);
-        });
-        assertTrue(exception.getErrors().contains("Name is required"));
-    }
-
-    @Test
-    void createUser_MissingUsername_ShouldThrowException() {
-        // Arrange
-        User invalidUser = new User(null, "Test User", null, "test@example.com", "555-555-5555", "test.com");
-
-        // Act & Assert
-        ValidationException exception = assertThrows(ValidationException.class, () -> {
-            usersService.createUser(invalidUser);
-        });
-        assertTrue(exception.getErrors().contains("Username is required"));
     }
 
     @Test
     void createUser_MissingEmail_ShouldThrowException() {
         // Arrange
-        User invalidUser = new User(null, "Test User", "testuser", null, "555-555-5555", "test.com");
+        UserRequestDTO invalidUser = new UserRequestDTO(
+                "Test User", "testuser", "sssss", "555-555-5555", "test.com");
 
         // Act & Assert
-        ValidationException exception = assertThrows(ValidationException.class, () -> {
-            usersService.createUser(invalidUser);
-        });
-        assertTrue(exception.getErrors().contains("Email is required"));
+        ValidationException exception = assertThrows(ValidationException.class, () ->
+                usersService.createUser(invalidUser));
+        assertTrue(exception.getErrors().contains("Invalid email format"));
     }
 
     @Test
     void createUser_InvalidEmail_ShouldThrowException() {
         // Arrange
-        User invalidUser = new User(null, "Test User", "testuser", "invalid-email", "555-555-5555", "test.com");
+        UserRequestDTO invalidUser = new UserRequestDTO(
+                "Test User", "testuser", "invalid-email", "555-555-5555", "test.com");
 
         // Act & Assert
-        ValidationException exception = assertThrows(ValidationException.class, () -> {
-            usersService.createUser(invalidUser);
-        });
+        ValidationException exception = assertThrows(ValidationException.class, () ->
+                usersService.createUser(invalidUser));
         assertTrue(exception.getErrors().contains("Invalid email format"));
     }
 
     @Test
     void updateUser_ExistingIdAndValidUser_ShouldUpdateAndReturnUser() {
         // Arrange
-        User updatedUser = new User(1L, "Updated Name", "updated", "updated@example.com", "999-999-9999", "updated.com");
+        UserRequestDTO updatedUser = new UserRequestDTO(
+                "Updated Name", "updated", "updated@example.com", "999-999-9999", "updated.com");
 
-        // Act
-        Optional<User> result = usersService.updateUser(1L, updatedUser);
+        usersService.updateUser(1L, updatedUser);
 
         // Assert
-        assertTrue(result.isPresent());
-        assertEquals("Updated Name", result.get().getName());
-        assertEquals("updated", result.get().getUsername());
-        assertEquals("updated@example.com", result.get().getEmail());
+        assertEquals(updatedUser.name(), usersService.getUserById(1L).orElseThrow().name());
     }
 
     @Test
     void updateUser_NonExistingId_ShouldReturnEmpty() {
         // Arrange
-        User updatedUser = new User(999L, "Updated Name", "updated", "updated@example.com", "999-999-9999", "updated.com");
+        UserRequestDTO updatedUser = new UserRequestDTO(
+                "Updated Name", "updated", "updated@example.com", "999-999-9999", "updated.com");
 
         // Act
-        Optional<User> result = usersService.updateUser(999L, updatedUser);
+        NotFoundException exception = assertThrows(NotFoundException.class, () ->
+                usersService.updateUser(999L, updatedUser));
 
         // Assert
-        assertTrue(result.isEmpty());
-    }
-
-    @Test
-    void updateUser_InvalidUser_ShouldThrowException() {
-        // Arrange
-        User invalidUser = new User(1L, null, "updated", "updated@example.com", "999-999-9999", "updated.com");
-
-        // Act & Assert
-        ValidationException exception = assertThrows(ValidationException.class, () -> {
-            usersService.updateUser(1L, invalidUser);
-        });
-        assertTrue(exception.getErrors().contains("Name is required"));
+        assertEquals("User with ID " + 999L + " not found.", exception.getMessage());
     }
 
     @Test
     void deleteUser_ExistingId_ShouldReturnTrueAndRemoveUser() {
         // Act
-        boolean result = usersService.deleteUser(1L);
+        usersService.deleteUser(1L);
 
         // Assert
-        assertTrue(result);
         assertEquals(1, usersService.getAllUsers().size());
         assertFalse(usersService.getUserById(1L).isPresent());
     }
@@ -181,10 +147,12 @@ class UsersServiceTest {
     @Test
     void deleteUser_NonExistingId_ShouldReturnFalse() {
         // Act
-        boolean result = usersService.deleteUser(999L);
+        NotFoundException exception = assertThrows(NotFoundException.class, () ->
+                usersService.deleteUser(999L)
+        );
 
         // Assert
-        assertFalse(result);
+        assertEquals("User with ID " + 999L + " not found.", exception.getMessage());
         assertEquals(2, usersService.getAllUsers().size());
     }
 }

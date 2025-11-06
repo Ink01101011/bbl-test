@@ -71,12 +71,9 @@ public class UsersService {
             throw new ValidationException(validationErrors);
         }
 
-        Optional<UserDTO> user = getUserById(id);
-        if (user.isEmpty()) {
-            throw new NotFoundException("User with ID " + id + " not found.");
-        }
+        getUserById(id).map(user -> users.remove(user))
+                .orElseThrow(() -> new NotFoundException("User with ID " + id + " not found."));
 
-        users.remove(user.get());
 
         UserDTO newUser = new UserDTO(id, updatedUser.name(), updatedUser.username(), updatedUser.email(), updatedUser.phone(), updatedUser.website());
         users.add(newUser);
