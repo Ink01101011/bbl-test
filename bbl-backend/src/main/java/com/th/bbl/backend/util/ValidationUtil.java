@@ -1,6 +1,6 @@
 package com.th.bbl.backend.util;
 
-import com.th.bbl.backend.model.User;
+import com.th.bbl.backend.model.UserRequestDTO;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,21 +12,9 @@ public class ValidationUtil {
             "^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}$"
     );
 
-    public static List<String> validateUser(User user) {
+    public static List<String> validateUser(UserRequestDTO user) {
         List<String> errors = new ArrayList<>();
-
-        // Check for required fields
-        if (user.getName() == null || user.getName().trim().isEmpty()) {
-            errors.add("Name is required");
-        }
-
-        if (user.getUsername() == null || user.getUsername().trim().isEmpty()) {
-            errors.add("Username is required");
-        }
-
-        if (user.getEmail() == null || user.getEmail().trim().isEmpty()) {
-            errors.add("Email is required");
-        } else if (!isValidEmail(user.getEmail())) {
+        if (!isValidEmail(user.email())) {
             errors.add("Invalid email format");
         }
 

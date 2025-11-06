@@ -2,7 +2,7 @@ package com.th.bbl.backend.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.th.bbl.backend.exception.ValidationException;
-import com.th.bbl.backend.model.User;
+import com.th.bbl.backend.model.UserDTO;
 import com.th.bbl.backend.service.UsersService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -12,9 +12,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -35,21 +33,22 @@ class UsersControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    private User user1;
-    private User user2;
-    private List<User> userList;
+    private UserDTO user1;
+    private UserDTO user2;
+    private HashSet<UserDTO> userList;
 
     @BeforeEach
     void setUp() {
-        user1 = new User(1L, "John Doe", "johndoe", "john@example.com", "123-456-7890", "example.com");
-        user2 = new User(2L, "Jane Smith", "janesmith", "jane@example.com", "987-654-3210", "janesmith.com");
-        userList = Arrays.asList(user1, user2);
+        user1 = new UserDTO(1L, "John Doe", "johndoe", "john@example.com", "123-456-7890", "example.com");
+        user2 = new UserDTO(2L, "Jane Smith", "janesmith", "jane@example.com", "987-654-3210", "janesmith.com");
+        userList.add(user1);
+        userList.add(user2);
     }
 
     @Test
     void getAllUsers_ShouldReturnAllUsers() throws Exception {
         // Arrange
-        when(usersService.getAllUsers()).thenReturn(userList);
+        when(usersService.getAllUsers()).thenReturn(userList.stream().toList());
 
         // Act & Assert
         mockMvc.perform(get("/api/users")
@@ -90,10 +89,10 @@ class UsersControllerTest {
     @Test
     void createUser_ValidUser_ShouldReturnCreatedUser() throws Exception {
         // Arrange
-        User newUser = new User(null, "Test User", "testuser", "test@example.com", "555-555-5555", "test.com");
-        User createdUser = new User(3L, "Test User", "testuser", "test@example.com", "555-555-5555", "test.com");
+        UserDTO newUser = new UserDTO(null, "Test User", "testuser", "test@example.com", "555-555-5555", "test.com");
+        UserDTO createdUser = new UserDTO(3L, "Test User", "testuser", "test@example.com", "555-555-5555", "test.com");
 
-        when(usersService.createUser(any(User.class))).thenReturn(createdUser);
+        when(usersService.createUser(any())).thenReturn(createdUser);
 
         // Act & Assert
         mockMvc.perform(post("/api/users")
@@ -107,9 +106,9 @@ class UsersControllerTest {
     @Test
     void createUser_InvalidUser_ShouldReturnBadRequest() throws Exception {
         // Arrange
-        User invalidUser = new User(null, null, "testuser", "test@example.com", "555-555-5555", "test.com");
+        UserDTO invalidUser = new UserDTO(null, null, "testuser", "test@example.com", "555-555-5555", "test.com");
 
-        when(usersService.createUser(any(User.class))).thenThrow(
+        when(usersService.createUser(any())).thenThrow(
             new ValidationException(Arrays.asList("Name is required"))
         );
 
@@ -125,9 +124,9 @@ class UsersControllerTest {
     @Test
     void updateUser_ExistingIdAndValidUser_ShouldReturnUpdatedUser() throws Exception {
         // Arrange
-        User updatedUser = new User(1L, "Updated Name", "updated", "updated@example.com", "999-999-9999", "updated.com");
+        UserDTO updatedUser = new UserDTO(1L, "Updated Name", "updated", "updated@example.com", "999-999-9999", "updated.com");
 
-        when(usersService.updateUser(eq(1L), any(User.class))).thenReturn(Optional.of(updatedUser));
+        when(usersService.updateUser(eq(1L), any())).thenReturn(Optional.of(updatedUser));
 
         // Act & Assert
         mockMvc.perform(put("/api/users/1")
