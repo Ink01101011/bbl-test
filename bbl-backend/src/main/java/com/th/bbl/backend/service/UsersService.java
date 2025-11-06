@@ -14,12 +14,18 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
 public class UsersService {
 
-    private HashSet<UserDTO> users;
+    private final ConcurrentHashMap<Long, UserDTO> users = new ConcurrentHashMap<>();
+    private final AtomicLong idCounter = new AtomicLong(0);
+
+
     private final ObjectMapper objectMapper;
 
     public UsersService() {
@@ -30,59 +36,51 @@ public class UsersService {
     private void loadUsersFromJson() {
         try {
             InputStream inputStream = new ClassPathResource("users.json").getInputStream();
-            users = objectMapper.readValue(inputStream, new TypeReference<>() {
+            List<UserDTO> usersJson = objectMapper.readValue(inputStream, new TypeReference<>() {
             });
             log.info("Loaded {} users from JSON file", users.size());
+            for (UserDTO user : usersJson) {
+                users.put(user.id(), user);
+                idCounter.updateAndGet(currentId -> Math.max(currentId, user.id()));
+            }
         } catch (IOException e) {
             log.error("Failed to load users from JSON file", e);
-            users = new HashSet<>();
         }
     }
 
     public List<UserDTO> getAllUsers() {
-        return users.stream().sorted(Comparator.comparing(UserDTO::id)).toList();
+        return users.values().stream()
+                .sorted(Comparator.comparing(UserDTO::id))
+                .collect(Collectors.toList());
     }
 
     public Optional<UserDTO> getUserById(Long id) {
-        return users.stream().filter(user -> user.id().equals(id)).findFirst();
+        return Optional.ofNullable(users.get(id));
     }
 
-    public UserDTO createUser(UserRequestDTO user) {
+    public void createUser(UserRequestDTO user) {
         // Validate required fields
         List<String> validationErrors = ValidationUtil.validateUser(user);
-        if (!validationErrors.isEmpty()) {
-            throw new ValidationException(validationErrors);
-        }
+        if (!validationErrors.isEmpty()) throw new ValidationException(validationErrors);
 
-        // Assign new ID (max ID + 1)
-        Long newId = users.stream()
-                .mapToLong(UserDTO::id)
-                .max()
-                .orElse(0) + 1;
+        long newId = idCounter.incrementAndGet();
         UserDTO newUser = new UserDTO(newId, user.name(), user.username(), user.email(), user.phone(), user.website());
-        users.add(newUser);
-        return newUser;
+        users.put(newId, newUser);
     }
 
     public void updateUser(Long id, UserRequestDTO updatedUser) {
-        // Validate required fields
         List<String> validationErrors = ValidationUtil.validateUser(updatedUser);
-        if (!validationErrors.isEmpty()) {
-            throw new ValidationException(validationErrors);
-        }
+        if (!validationErrors.isEmpty()) throw new ValidationException(validationErrors);
 
-        getUserById(id).map(user -> users.remove(user))
-                .orElseThrow(() -> new NotFoundException("User with ID " + id + " not found."));
-
-
-        UserDTO newUser = new UserDTO(id, updatedUser.name(), updatedUser.username(), updatedUser.email(), updatedUser.phone(), updatedUser.website());
-        users.add(newUser);
+        users.compute(id, (k, existing) -> {
+            if (existing == null) throw new NotFoundException("User not found with id " + id);
+            return new UserDTO(id, updatedUser.name(), updatedUser.username(), updatedUser.email(), updatedUser.phone(), updatedUser.website());
+        });
     }
 
     public void deleteUser(Long id) {
-        getUserById(id)
-                .map(user -> users.remove(user))
-                .orElseThrow(() -> new NotFoundException("User with ID " + id + " not found."));
+        UserDTO deleted = users.remove(id);
+        if (deleted == null) throw new NotFoundException("User not found with id " + id);
     }
 
 }

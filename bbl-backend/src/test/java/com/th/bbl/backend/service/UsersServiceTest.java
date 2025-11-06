@@ -11,9 +11,9 @@ import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -26,9 +26,9 @@ class UsersServiceTest {
     @BeforeEach
     void setUp() {
         // Create mock users data
-        HashSet<UserDTO> mockUsers = new HashSet<>();
-        mockUsers.add(new UserDTO(1L, "John Doe", "johndoe", "john@example.com", "123-456-7890", "example.com"));
-        mockUsers.add(new UserDTO(2L, "Jane Smith", "janesmith", "jane@example.com", "987-654-3210", "janesmith.com"));
+        ConcurrentHashMap<Long, UserDTO> mockUsers = new ConcurrentHashMap<>();
+        mockUsers.put(1L, new UserDTO(1L, "John Doe", "johndoe", "john@example.com", "123-456-7890", "example.com"));
+        mockUsers.put(2L, new UserDTO(2L, "Jane Smith", "janesmith", "jane@example.com", "987-654-3210", "janesmith.com"));
 
         // Set mock users list in the service
         ReflectionTestUtils.setField(usersService, "users", mockUsers);
@@ -76,11 +76,9 @@ class UsersServiceTest {
         );
 
         // Act
-        UserDTO result = usersService.createUser(newUser);
+        usersService.createUser(newUser);
 
         // Assert
-        assertEquals(3L, result.id()); // Expecting ID to be max(existing IDs) + 1
-        assertEquals("Test User", result.name());
         assertEquals(3, usersService.getAllUsers().size());
     }
 
@@ -131,7 +129,7 @@ class UsersServiceTest {
                 usersService.updateUser(999L, updatedUser));
 
         // Assert
-        assertEquals("User with ID " + 999L + " not found.", exception.getMessage());
+        assertEquals("User not found with id 999", exception.getMessage());
     }
 
     @Test
@@ -152,7 +150,7 @@ class UsersServiceTest {
         );
 
         // Assert
-        assertEquals("User with ID " + 999L + " not found.", exception.getMessage());
+        assertEquals("User not found with id 999", exception.getMessage());
         assertEquals(2, usersService.getAllUsers().size());
     }
 }
