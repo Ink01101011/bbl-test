@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CopilotDiffPersistence">
+    <option name="pendingDiffs">
+      <map>
+        <entry key="$PROJECT_DIR$/bbl-backend/tmp-settings.xml">
+          <value>
+            <PendingDiffInfo>
+              <option name="filePath" value="$PROJECT_DIR$/bbl-backend/tmp-settings.xml" />
+              <option name="updatedContent" value="&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;&#10;&lt;settings xmlns=&quot;http://maven.apache.org/SETTINGS/1.0.0&quot;&#10;          xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot;&#10;          xsi:schemaLocation=&quot;http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd&quot;&gt;&#10;  &lt;mirrors&gt;&#10;    &lt;!-- No mirrors - use Maven Central directly --&gt;&#10;  &lt;/mirrors&gt;&#10;&lt;/settings&gt;&#10;" />
+            </PendingDiffInfo>
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+</project>
